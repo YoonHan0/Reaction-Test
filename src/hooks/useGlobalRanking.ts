@@ -57,6 +57,20 @@ export function useGlobalRanking(): UseGlobalRankingReturn {
   const addRanking = useCallback(
     async (displayName: string, reactionTimeMs: number): Promise<{ success: boolean; error?: string }> => {
       try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error('[useGlobalRanking] addRanking session 조회 실패:', sessionError);
+          return { success: false, error: '로그인 상태를 확인할 수 없습니다. 다시 시도해 주세요.' };
+        }
+
+        if (!session) {
+          return { success: false, error: '익명 로그인 후에만 순위를 등록할 수 있습니다.' };
+        }
+
         const { error: insertError } = await supabase.from('rankings').insert({
           player_name: displayName,
           reaction_time: reactionTimeMs,

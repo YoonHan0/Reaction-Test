@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, RotateCcw, AlertTriangle, Trophy, ChevronRight, Send } from 'lucide-react';
 import { REACTION_STATE, type ReactionState } from '../types/reactionState';
 import type { ReactionResult } from '../types/reactionState';
 import { getReactionRank, getRankMessage } from '../utils/reactionRank';
 import { useGlobalRanking } from '../hooks/useGlobalRanking';
+import { fetchRecentReactionRecords, insertReactionRecord, type ReactionRecord } from '../lib/reactionRecords';
+import { fetchMyStats, upsertMyStatsAfterAttempt } from '../lib/userStats';
 import { AlertModal } from './AlertModal';
 
 function getBackgroundClass(state: ReactionState): string {
@@ -51,7 +53,13 @@ export const ReactionTest = ({
   const [displayName, setDisplayName] = useState('');
   const [rankingSubmitState, setRankingSubmitState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [rankingErrorMsg, setRankingErrorMsg] = useState<string | null>(null);
+  const [saveErrorMsg, setSaveErrorMsg] = useState<string | null>(null);
+  const [serverBestTimeMs, setServerBestTimeMs] = useState<number | null>(null);
+  const [serverRecentRecords, setServerRecentRecords] = useState<ReactionRecord[]>([]);
+  const [serverRecordsLoading, setServerRecordsLoading] = useState(false);
+  const [serverRecordsErrorMsg, setServerRecordsErrorMsg] = useState<string | null>(null);
   const [showDuplicateAlert, setShowDuplicateAlert] = useState(false);
+  const lastSavedResultKeyRef = useRef<string | null>(null);
 
   const currentRank = result.reactionTimeMs > 0 ? getReactionRank(result.reactionTimeMs) : null;
   const rankMessage = getRankMessage(result.reactionTimeMs);
@@ -60,10 +68,76 @@ export const ReactionTest = ({
     fetchRankings();
   }, [fetchRankings]);
 
+  const fetchServerRecords = useCallback(async () => {
+    setServerRecordsLoading(true);
+    setServerRecordsErrorMsg(null);
+
+    const [statsResult, recordsResult] = await Promise.all([fetchMyStats(), fetchRecentReactionRecords(5)]);
+
+    if (statsResult.ok) {
+      setServerBestTimeMs(statsResult.data.bestTimeMs);
+    }
+
+    if (recordsResult.ok) {
+      setServerRecentRecords(recordsResult.data);
+    }
+
+    const errors: string[] = [];
+    if (!statsResult.ok) {
+      errors.push(statsResult.error);
+    }
+    if (!recordsResult.ok) {
+      errors.push(recordsResult.error);
+    }
+
+    setServerRecordsErrorMsg(errors.length > 0 ? errors[0] : null);
+    setServerRecordsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void fetchServerRecords();
+  }, [fetchServerRecords]);
+
   useEffect(() => {
     setRankingSubmitState('idle');
     setRankingErrorMsg(null);
   }, [result.reactionTimeMs]);
+
+  useEffect(() => {
+    if (state !== REACTION_STATE.RESULT || result.reactionTimeMs <= 0) {
+      return;
+    }
+
+    const roundedReactionTimeMs = Math.round(result.reactionTimeMs);
+    const resultKey = `${result.attempts}:${roundedReactionTimeMs}`;
+
+    if (lastSavedResultKeyRef.current === resultKey) {
+      return;
+    }
+
+    lastSavedResultKeyRef.current = resultKey;
+
+    void (async () => {
+      const [insertResult, statsResult] = await Promise.all([
+        insertReactionRecord(roundedReactionTimeMs),
+        upsertMyStatsAfterAttempt(roundedReactionTimeMs),
+      ]);
+
+      const errors: string[] = [];
+      if (!insertResult.ok) {
+        errors.push(insertResult.error);
+      }
+      if (!statsResult.ok) {
+        errors.push(statsResult.error);
+      }
+
+      setSaveErrorMsg(errors.length > 0 ? errors[0] : null);
+
+      if (insertResult.ok && statsResult.ok) {
+        await fetchServerRecords();
+      }
+    })();
+  }, [fetchServerRecords, result.attempts, result.reactionTimeMs, state]);
 
   const handleRegisterRanking = async () => {
     const name = displayName.trim() || '익명';
@@ -269,6 +343,9 @@ export const ReactionTest = ({
             {rankingSubmitState === 'error' && rankingErrorMsg && (
               <p className="text-sm text-red-400">{rankingErrorMsg}</p>
             )}
+            {saveErrorMsg && (
+              <p className="text-xs text-red-400/90">자동 저장 실패: {saveErrorMsg}</p>
+            )}
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
             <motion.button
@@ -345,6 +422,43 @@ export const ReactionTest = ({
         {result.recentRecords.length === 0 && !isShowingResult && (
           <p className="text-sm text-slate-500">측정 기록이 없습니다. 이어서 하려면 결과 후 &quot;다음 시도&quot;를 누르세요.</p>
         )}
+
+        <div className="mt-4 rounded-xl border border-slate-700/70 bg-slate-800/60 p-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">나의 기록</h3>
+
+          {serverRecordsLoading ? (
+            <p className="mt-2 text-sm text-slate-500">서버 기록 불러오는 중...</p>
+          ) : (
+            <>
+              <div className="mt-2 flex items-baseline justify-between gap-2">
+                <span className="text-slate-500">최고 기록:</span>
+                <span className="text-lg font-semibold tabular-nums text-emerald-400">
+                  {serverBestTimeMs !== null ? `${serverBestTimeMs} ms` : '—'}
+                </span>
+              </div>
+
+              {serverRecentRecords.length > 0 ? (
+                <ul className="mt-3 space-y-1.5">
+                  {serverRecentRecords.map((record) => (
+                    <li
+                      key={record.id}
+                      className="flex items-center justify-between rounded-lg bg-slate-900/70 px-3 py-2 text-sm"
+                    >
+                      <span className="text-slate-300">{new Date(record.createdAt).toLocaleDateString('ko-KR').replace(/\s/g, '').replace(/\.$/, '')}</span>
+                      <span className="font-medium tabular-nums text-slate-100">{record.reactionTimeMs} ms</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-3 text-sm text-slate-500">서버에 저장된 최근 기록이 없습니다.</p>
+              )}
+            </>
+          )}
+
+          {serverRecordsErrorMsg && (
+            <p className="mt-2 text-xs text-red-400/90">서버 기록 조회 실패: {serverRecordsErrorMsg}</p>
+          )}
+        </div>
       </motion.section>
 
       <motion.section
