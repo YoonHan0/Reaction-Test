@@ -76,8 +76,8 @@ export async function insertReactionRecord(
     return { ok: false, error: '유효한 반응속도 값이 아닙니다.' };
   }
 
-  if (roundedReactionTimeMs < 30) {
-    return { ok: false, error: '반응속도가 너무 빠릅니다.. (30ms 미만은 기록되지 않습니다)' };
+  if (roundedReactionTimeMs < 20) {
+    return { ok: false, error: '반응속도가 너무 빠릅니다.. (20ms 미만은 기록되지 않습니다)' };
   }
 
   try {
