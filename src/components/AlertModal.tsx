@@ -5,7 +5,6 @@ export interface AlertModalProps {
   isOpen: boolean;
   message: string;
   onClose: () => void;
-  /** 경고(amber) | 에러(red) | 기본(slate) */
   variant?: 'warning' | 'error' | 'default';
 }
 
@@ -17,19 +16,16 @@ export const AlertModal = ({
 }: AlertModalProps) => {
   const variantStyles = {
     warning: {
-      icon: 'bg-amber-500/20 text-amber-400',
-      border: 'border-amber-500/30',
-      button: 'bg-amber-500 text-slate-900 hover:bg-amber-400',
+      icon: 'bg-amber-100 text-amber-600',
+      button: 'bg-blue-600 text-white hover:bg-blue-700',
     },
     error: {
-      icon: 'bg-red-500/20 text-red-400',
-      border: 'border-red-500/30',
-      button: 'bg-red-500 text-white hover:bg-red-400',
+      icon: 'bg-red-100 text-red-600',
+      button: 'bg-blue-600 text-white hover:bg-blue-700',
     },
     default: {
-      icon: 'bg-slate-500/20 text-slate-400',
-      border: 'border-slate-600',
-      button: 'bg-slate-600 text-slate-100 hover:bg-slate-500',
+      icon: 'bg-slate-100 text-slate-600',
+      button: 'bg-blue-600 text-white hover:bg-blue-700',
     },
   };
 
@@ -52,7 +48,7 @@ export const AlertModal = ({
               role="alertdialog"
               aria-modal="true"
               aria-labelledby="alert-title"
-              className={`relative w-full max-w-sm rounded-2xl border bg-slate-900/95 p-6 shadow-xl shadow-black/40 backdrop-blur ${styles.border}`}
+              className="relative w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-lg"
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -62,7 +58,7 @@ export const AlertModal = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="absolute right-3 top-3 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
+                className="absolute right-3 top-3 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
                 aria-label="닫기"
               >
                 <X className="h-5 w-5" />
@@ -73,10 +69,10 @@ export const AlertModal = ({
                   <AlertTriangle className="h-6 w-6" />
                 </div>
                 <div>
-                  <h2 id="alert-title" className="text-lg font-semibold text-slate-100">
+                  <h2 id="alert-title" className="text-lg font-semibold text-slate-900">
                     알림
                   </h2>
-                  <p className="mt-2 text-sm text-slate-300">{message}</p>
+                  <p className="mt-2 text-sm text-slate-500">{message}</p>
                 </div>
                 <button
                   type="button"

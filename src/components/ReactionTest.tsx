@@ -12,16 +12,16 @@ import { AlertModal } from './AlertModal';
 function getBackgroundClass(state: ReactionState): string {
   switch (state) {
     case REACTION_STATE.WAITING:
-      return 'bg-blue-600';
+      return 'bg-blue-100';
     case REACTION_STATE.READY:
-      return 'bg-red-600';
+      return 'bg-rose-100';
     case REACTION_STATE.CLICK_NOW:
-      return 'bg-emerald-500';
+      return 'bg-emerald-100';
     case REACTION_STATE.RESULT:
     case REACTION_STATE.EARLY_CLICK:
-      return 'bg-slate-900';
+      return 'bg-slate-100';
     default:
-      return 'bg-slate-800';
+      return 'bg-slate-100';
   }
 }
 
@@ -36,6 +36,24 @@ export interface ReactionTestProps {
   onClickArea: () => void;
   onReset: () => void;
 }
+
+const ui = {
+  card: 'rounded-2xl border border-slate-200 bg-white p-4',
+  panel: 'mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3',
+  sectionTitle: 'text-sm font-semibold text-slate-700',
+  mutedText: 'text-slate-500',
+  iconButton:
+    'inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50',
+  primaryButton:
+    'inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-700',
+  secondaryButton:
+    'inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50',
+  softListItem: 'rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium tabular-nums text-slate-700',
+  rankingListItem: 'flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm',
+  serverListItem: 'flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm',
+  stateTitle: 'text-slate-900',
+  stateBody: 'text-slate-600',
+};
 
 export const ReactionTest = ({
   state,
@@ -167,23 +185,24 @@ export const ReactionTest = ({
       />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
-            <Zap className="h-5 w-5 text-white" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+            <Zap className="h-5 w-5 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-white">반응속도 테스트</h1>
-            <p className="text-xs text-white/80">2~7초 후 초록색에 클릭</p>
+            <h1 className="text-lg font-semibold text-slate-900">반응속도 테스트</h1>
+            <p className="text-xs text-slate-500">2~7초 후 초록색에 클릭</p>
           </div>
         </div>
         <motion.button
           type="button"
           onClick={onReset}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
+          className={ui.iconButton}
+          aria-label="초기화"
+          title="초기화"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
           <RotateCcw className="h-4 w-4" />
-          초기화
         </motion.button>
       </div>
 
@@ -209,8 +228,8 @@ export const ReactionTest = ({
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
               >
-                <p className="text-2xl font-bold text-white sm:text-3xl">시작하려면 클릭</p>
-                <p className="max-w-xs text-sm text-white/90">
+                <p className={`text-2xl font-bold sm:text-3xl ${ui.stateTitle}`}>시작하려면 클릭</p>
+                <p className={`max-w-xs text-sm ${ui.stateBody}`}>
                   버튼을 누르면 빨간색으로 바뀌고, 초록색이 되면 최대한 빨리 클릭하세요
                 </p>
               </motion.div>
@@ -224,8 +243,8 @@ export const ReactionTest = ({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <p className="text-2xl font-bold text-white sm:text-3xl">기다리세요...</p>
-                <p className="text-sm text-white/90">초록색으로 바뀌면 바로 클릭!</p>
+                <p className="text-2xl font-bold text-rose-600 sm:text-3xl">기다리세요...</p>
+                <p className={`text-sm ${ui.stateBody}`}>초록색으로 바뀌면 바로 클릭!</p>
               </motion.div>
             )}
 
@@ -238,8 +257,8 @@ export const ReactionTest = ({
                 exit={{ opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               >
-                <p className="text-3xl font-bold text-white sm:text-4xl">클릭하세요!</p>
-                <p className="text-base text-white/90">지금!</p>
+                <p className="text-3xl font-bold text-emerald-600 sm:text-4xl">클릭하세요!</p>
+                <p className={`text-base ${ui.stateBody}`}>지금!</p>
               </motion.div>
             )}
 
@@ -252,10 +271,10 @@ export const ReactionTest = ({
                 exit={{ opacity: 0 }}
               >
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/30">
-                  <AlertTriangle className="h-8 w-8 text-amber-200" />
+                  <AlertTriangle className="h-8 w-8 text-amber-500" />
                 </div>
-                <p className="text-2xl font-bold text-white sm:text-3xl">부정 출발!</p>
-                <p className="max-w-xs text-sm text-white/80">
+                <p className={`text-2xl font-bold sm:text-3xl ${ui.stateTitle}`}>부정 출발!</p>
+                <p className={`max-w-xs text-sm ${ui.stateBody}`}>
                   초록색이 된 후에만 클릭해 주세요. 초기화 후 다시 시도하세요.
                 </p>
               </motion.div>
@@ -270,17 +289,17 @@ export const ReactionTest = ({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
               >
-                <p className="text-lg font-medium text-slate-400">반응 시간</p>
-                <p className="text-5xl font-bold tabular-nums text-white sm:text-6xl">
+                <p className={`text-lg font-medium ${ui.stateBody}`}>반응 시간</p>
+                <p className="text-5xl font-bold tabular-nums text-slate-900 sm:text-6xl">
                   {result.reactionTimeMs}
-                  <span className="ml-1 text-3xl text-slate-400 sm:text-4xl">ms</span>
+                  <span className="ml-1 text-3xl text-slate-500 sm:text-4xl">ms</span>
                 </p>
                 {currentRank && (
                   <div className="flex flex-col items-center gap-1">
-                    <span className="rounded-full bg-white/10 px-3 py-0.5 text-sm font-bold text-amber-300">
+                    <span className="rounded-full bg-amber-100 px-3 py-0.5 text-sm font-bold text-amber-700">
                       랭크 {currentRank.rank}
                     </span>
-                    <p className="text-xl font-semibold text-emerald-400">{rankMessage}</p>
+                    <p className="text-xl font-semibold text-emerald-600">{rankMessage}</p>
                   </div>
                 )}
               </motion.div>
@@ -298,7 +317,7 @@ export const ReactionTest = ({
           <motion.button
             type="button"
             onClick={onStart}
-            className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-emerald-500/30 transition-colors hover:bg-emerald-400"
+            className={ui.primaryButton}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
@@ -314,8 +333,8 @@ export const ReactionTest = ({
           animate={{ opacity: 1 }}
           className="flex flex-col gap-4"
         >
-          <div className="flex flex-col gap-2 rounded-xl border border-slate-700/80 bg-slate-800/50 p-4">
-            <p className="text-sm font-medium text-slate-300">순위에 등록하기</p>
+          <div className={`flex flex-col gap-2 ${ui.card}`}>
+            <p className="text-sm font-medium text-slate-700">순위에 등록하기</p>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
                 type="text"
@@ -323,13 +342,13 @@ export const ReactionTest = ({
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="이름을 입력하세요"
                 maxLength={20}
-                className="flex-1 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
               <motion.button
                 type="button"
                 onClick={handleRegisterRanking}
                 disabled={rankingSubmitState === 'loading'}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-amber-400 disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                 whileHover={rankingSubmitState !== 'loading' ? { scale: 1.02 } : undefined}
                 whileTap={rankingSubmitState !== 'loading' ? { scale: 0.98 } : undefined}
               >
@@ -338,20 +357,20 @@ export const ReactionTest = ({
               </motion.button>
             </div>
             {rankingSubmitState === 'success' && (
-              <p className="text-sm text-emerald-400">순위에 등록되었습니다!</p>
+              <p className="text-sm text-emerald-600">순위에 등록되었습니다!</p>
             )}
             {rankingSubmitState === 'error' && rankingErrorMsg && (
-              <p className="text-sm text-red-400">{rankingErrorMsg}</p>
+              <p className="text-sm text-red-600">{rankingErrorMsg}</p>
             )}
             {saveErrorMsg && (
-              <p className="text-xs text-red-400/90">자동 저장 실패: {saveErrorMsg}</p>
+              <p className="text-xs text-red-600">자동 저장 실패: {saveErrorMsg}</p>
             )}
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
             <motion.button
               type="button"
               onClick={onStart}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-emerald-500/30 transition-colors hover:bg-emerald-400 sm:w-auto"
+              className={`${ui.primaryButton} w-full sm:w-auto`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -361,7 +380,7 @@ export const ReactionTest = ({
             <motion.button
               type="button"
               onClick={onReset}
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700/80 sm:w-auto"
+              className={`${ui.secondaryButton} w-full sm:w-auto`}
               whileTap={{ scale: 0.98 }}
             >
               <RotateCcw className="h-4 w-4" />
@@ -372,49 +391,40 @@ export const ReactionTest = ({
       )}
 
       <motion.section
-        className="rounded-2xl border border-slate-700/80 bg-slate-900/90 p-4 backdrop-blur"
+        className={ui.card}
         initial={false}
         animate={{ opacity: 1 }}
       >
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+        <h2 className={`mb-3 ${ui.sectionTitle}`}>
           내 기록
         </h2>
         <div className="mb-3 flex items-baseline justify-between gap-2">
-          <span className="text-slate-500">현재:</span>
-          <span className="text-2xl font-bold tabular-nums text-white">
+          <span className={ui.mutedText}>현재</span>
+          <span className="text-2xl font-bold tabular-nums text-slate-900">
             {isShowingResult ? `${result.reactionTimeMs} ms` : '—'}
           </span>
         </div>
         {result.recentRecords.length > 0 && (
           <>
-            <p className="mb-2 text-xs text-slate-500">최근 5회 (누적)</p>
+            <p className={`mb-2 text-xs ${ui.mutedText}`}>나의 최근 기록</p>
             <ul className="flex flex-wrap gap-2">
               {result.recentRecords.map((ms, i) => {
-                const rankInfo = getReactionRank(ms);
                 return (
                   <motion.li
                     key={`${ms}-${i}`}
-                    className="flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-sm font-medium tabular-nums text-slate-200"
+                    className={ui.softListItem}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}
                   >
-                    {rankInfo && (
-                      <span
-                        className="rounded bg-white/10 px-1.5 py-0.5 text-xs font-bold text-amber-300"
-                        title={rankInfo.message}
-                      >
-                        {rankInfo.rank}
-                      </span>
-                    )}
                     {ms} ms
                   </motion.li>
                 );
               })}
             </ul>
             {result.averageMs !== null && (
-              <p className="mt-3 text-sm text-slate-400">
-                평균 <span className="font-semibold text-slate-200">{result.averageMs} ms</span>
+              <p className={`mt-3 text-sm ${ui.mutedText}`}>
+                평균 <span className="font-semibold text-slate-800">{result.averageMs} ms</span>
               </p>
             )}
           </>
@@ -423,16 +433,16 @@ export const ReactionTest = ({
           <p className="text-sm text-slate-500">측정 기록이 없습니다. 이어서 하려면 결과 후 &quot;다음 시도&quot;를 누르세요.</p>
         )}
 
-        <div className="mt-4 rounded-xl border border-slate-700/70 bg-slate-800/60 p-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">나의 기록</h3>
+        <div className={ui.panel}>
+          <h3 className="text-xs font-semibold text-slate-600">서버 기록</h3>
 
           {serverRecordsLoading ? (
             <p className="mt-2 text-sm text-slate-500">서버 기록 불러오는 중...</p>
           ) : (
             <>
               <div className="mt-2 flex items-baseline justify-between gap-2">
-                <span className="text-slate-500">최고 기록:</span>
-                <span className="text-lg font-semibold tabular-nums text-emerald-400">
+                <span className={ui.mutedText}>최고 기록</span>
+                <span className="text-lg font-semibold tabular-nums text-slate-900">
                   {serverBestTimeMs !== null ? `${serverBestTimeMs} ms` : '—'}
                 </span>
               </div>
@@ -442,10 +452,10 @@ export const ReactionTest = ({
                   {serverRecentRecords.map((record) => (
                     <li
                       key={record.id}
-                      className="flex items-center justify-between rounded-lg bg-slate-900/70 px-3 py-2 text-sm"
+                      className={ui.serverListItem}
                     >
-                      <span className="text-slate-300">{new Date(record.createdAt).toLocaleDateString('ko-KR').replace(/\s/g, '').replace(/\.$/, '')}</span>
-                      <span className="font-medium tabular-nums text-slate-100">{record.reactionTimeMs} ms</span>
+                      <span className={ui.mutedText}>{new Date(record.createdAt).toLocaleDateString('ko-KR').replace(/\s/g, '').replace(/\.$/, '')}</span>
+                      <span className="font-medium tabular-nums text-slate-800">{record.reactionTimeMs} ms</span>
                     </li>
                   ))}
                 </ul>
@@ -456,18 +466,18 @@ export const ReactionTest = ({
           )}
 
           {serverRecordsErrorMsg && (
-            <p className="mt-2 text-xs text-red-400/90">서버 기록 조회 실패: {serverRecordsErrorMsg}</p>
+            <p className="mt-2 text-xs text-red-600">서버 기록 조회 실패: {serverRecordsErrorMsg}</p>
           )}
         </div>
       </motion.section>
 
       <motion.section
-        className="rounded-2xl border border-slate-700/80 bg-slate-900/90 p-4 backdrop-blur"
+        className={ui.card}
         initial={false}
       >
         <div className="mb-2 flex items-center gap-2">
-          <Trophy className="h-5 w-5 text-amber-400" />
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+          <Trophy className="h-5 w-5 text-slate-600" />
+          <h2 className="text-sm font-semibold text-slate-700">
             전체 순위
           </h2>
         </div>
@@ -477,14 +487,14 @@ export const ReactionTest = ({
               <p className="text-sm text-slate-500">순위 불러오는 중...</p>
             ) : rankingList.length > 0 ? (
               <ul className="space-y-1.5">
-                {rankingList.map((entry) => (
+                {rankingList.slice(0, 5).map((entry) => (
                   <li
                     key={entry.rank}
-                    className="flex items-center justify-between rounded-lg bg-slate-800 px-3 py-2 text-sm"
+                    className={ui.rankingListItem}
                   >
-                    <span className="font-medium text-slate-300">#{entry.rank}</span>
-                    <span className="text-slate-200">{entry.displayName}</span>
-                    <span className="tabular-nums text-emerald-400">{entry.reactionTimeMs} ms</span>
+                    <span className="font-medium text-slate-600">#{entry.rank}</span>
+                    <span className="text-slate-700">{entry.displayName}</span>
+                    <span className="tabular-nums text-blue-600">{entry.reactionTimeMs} ms</span>
                   </li>
                 ))}
               </ul>
