@@ -13,6 +13,33 @@ type SupabaseErrorLike = {
   code?: string;
 };
 
+function isRlsOrPrivilegeError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const err = error as SupabaseErrorLike;
+  const mergedText = [err.message, err.details, err.hint]
+    .filter((part): part is string => typeof part === 'string')
+    .join(' ')
+    .toLowerCase();
+
+  return (
+    err.code === '42501' ||
+    mergedText.includes('row-level security') ||
+    mergedText.includes('permission denied') ||
+    mergedText.includes('violates row-level security')
+  );
+}
+
+function toInsertUserMessage(error: unknown): string {
+  if (isRlsOrPrivilegeError(error)) {
+    return '권한 확인에 실패해 자동 저장하지 못했습니다. 새로고침 후 다시 시도해 주세요.';
+  }
+
+  return toReadableError(error, '반응속도 기록 저장에 실패했습니다.');
+}
+
 function toReadableError(error: unknown, fallbackMessage: string): string {
   if (!error) {
     return fallbackMessage;
@@ -49,7 +76,30 @@ export async function insertReactionRecord(
     return { ok: false, error: '유효한 반응속도 값이 아닙니다.' };
   }
 
+  if (roundedReactionTimeMs < 30) {
+    return { ok: false, error: '반응속도가 너무 빠릅니다.. (30ms 미만은 기록되지 않습니다)' };
+  }
+
   try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      return {
+        ok: false,
+        error: toReadableError(sessionError, '로그인 상태를 확인하지 못했습니다. 다시 시도해 주세요.'),
+      };
+    }
+
+    if (!session) {
+      return {
+        ok: false,
+        error: '로그인 세션이 확인되지 않아 자동 저장할 수 없습니다. 새로고침 후 다시 인증해 주세요.',
+      };
+    }
+
     const { error } = await supabase.from('reaction_records').insert({
       reaction_time_ms: roundedReactionTimeMs,
     });
@@ -57,7 +107,7 @@ export async function insertReactionRecord(
     if (error) {
       return {
         ok: false,
-        error: toReadableError(error, '반응속도 기록 저장에 실패했습니다.'),
+        error: toInsertUserMessage(error),
       };
     }
 

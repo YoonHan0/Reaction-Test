@@ -357,7 +357,11 @@ export const ReactionTest = ({
               </motion.button>
             </div>
             {rankingSubmitState === 'success' && (
-              <p className="text-sm text-emerald-600">순위에 등록되었습니다!</p>
+                <p className="text-sm text-emerald-600">
+                순위에 등록되었습니다!
+                <br />
+                Top5의 경우 전체 순위에 반영됩니다. 확인해보세요!
+                </p>
             )}
             {rankingSubmitState === 'error' && rankingErrorMsg && (
               <p className="text-sm text-red-600">{rankingErrorMsg}</p>
@@ -430,7 +434,7 @@ export const ReactionTest = ({
           </>
         )}
         {result.recentRecords.length === 0 && !isShowingResult && (
-          <p className="text-sm text-slate-500">측정 기록이 없습니다. 이어서 하려면 결과 후 &quot;다음 시도&quot;를 누르세요.</p>
+          <p className="text-sm text-slate-500">측정 기록이 존재하지 않습니다. 게임을 시작해볼까요?</p>
         )}
 
         <div className={ui.panel}>
@@ -493,7 +497,10 @@ export const ReactionTest = ({
                     className={ui.rankingListItem}
                   >
                     <span className="font-medium text-slate-600">#{entry.rank}</span>
-                    <span className="text-slate-700">{entry.displayName}</span>
+                    <span className="text-slate-700">
+                      {entry.rank === 1 ? '🥇 ' : entry.rank === 2 ? '🥈 ' : entry.rank === 3 ? '🥉 ' : ''}
+                      {entry.displayName}
+                    </span>
                     <span className="tabular-nums text-blue-600">{entry.reactionTimeMs} ms</span>
                   </li>
                 ))}
