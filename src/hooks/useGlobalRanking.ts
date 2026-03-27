@@ -8,7 +8,7 @@ export interface UseGlobalRankingReturn {
   loading: boolean;
   error: string | null;
   fetchRankings: () => Promise<void>;
-  addRanking: (displayName: string, reactionTimeMs: number) => Promise<{ success: boolean; error?: string }>;
+  addRanking: (displayName: string, reactionTimeMs: number, attemptId: string) => Promise<{ success: boolean; error?: string }>;
   isRankingAvailable: boolean;
 }
 
@@ -55,7 +55,7 @@ export function useGlobalRanking(): UseGlobalRankingReturn {
   }, []);
 
   const addRanking = useCallback(
-    async (displayName: string, reactionTimeMs: number): Promise<{ success: boolean; error?: string }> => {
+    async (displayName: string, reactionTimeMs: number, attemptId: string): Promise<{ success: boolean; error?: string }> => {
       try {
         const {
           data: { session },
@@ -71,16 +71,33 @@ export function useGlobalRanking(): UseGlobalRankingReturn {
           return { success: false, error: '익명 로그인 후에만 순위를 등록할 수 있습니다.' };
         }
 
+        if (!attemptId.trim()) {
+          return { success: false, error: '측정 기록을 확인할 수 없어 순위를 등록할 수 없습니다. 다시 측정해 주세요.' };
+        }
+
         const { error: insertError } = await supabase.from('rankings').insert({
           player_name: displayName,
           reaction_time: reactionTimeMs,
+          attempt_id: attemptId,
         });
 
         if (insertError) {
           console.error('[useGlobalRanking] addRanking insert 실패:', insertError);
+          const duplicateText = [insertError.message, insertError.details, insertError.hint]
+            .filter((part): part is string => typeof part === 'string')
+            .join(' ')
+            .toLowerCase();
           const isDuplicate =
             insertError.code === '23505' ||
             /duplicate key value|unique constraint/i.test(insertError.message ?? '');
+
+          if (isDuplicate && duplicateText.includes('attempt_id')) {
+            return {
+              success: false,
+              error: '이미 순위에 등록한 기록입니다.',
+            };
+          }
+
           return {
             success: false,
             error: isDuplicate ? '이미 사용 중인 이름입니다' : insertError.message,

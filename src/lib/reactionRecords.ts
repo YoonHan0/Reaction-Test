@@ -69,7 +69,7 @@ function toReadableError(error: unknown, fallbackMessage: string): string {
 
 export async function insertReactionRecord(
   reactionTimeMs: number,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true; attemptId: string } | { ok: false; error: string }> {
   const roundedReactionTimeMs = Math.round(reactionTimeMs);
 
   if (!Number.isFinite(roundedReactionTimeMs)) {
@@ -100,9 +100,13 @@ export async function insertReactionRecord(
       };
     }
 
-    const { error } = await supabase.from('reaction_records').insert({
-      reaction_time_ms: roundedReactionTimeMs,
-    });
+    const { data, error } = await supabase
+      .from('reaction_records')
+      .insert({
+        reaction_time_ms: roundedReactionTimeMs,
+      })
+      .select('id')
+      .single();
 
     if (error) {
       return {
@@ -111,7 +115,7 @@ export async function insertReactionRecord(
       };
     }
 
-    return { ok: true };
+    return { ok: true, attemptId: String(data.id) };
   } catch (error: unknown) {
     return {
       ok: false,

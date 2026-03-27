@@ -77,10 +77,15 @@ export const ReactionTest = ({
   const [serverRecordsLoading, setServerRecordsLoading] = useState(false);
   const [serverRecordsErrorMsg, setServerRecordsErrorMsg] = useState<string | null>(null);
   const [showDuplicateAlert, setShowDuplicateAlert] = useState(false);
+  const [showEmptyNameAlert, setShowEmptyNameAlert] = useState(false);
+  const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null);
   const lastSavedResultKeyRef = useRef<string | null>(null);
+  const lastRegisteredAttemptIdRef = useRef<string | null>(null);
 
   const currentRank = result.reactionTimeMs > 0 ? getReactionRank(result.reactionTimeMs) : null;
   const rankMessage = getRankMessage(result.reactionTimeMs);
+  const isRankingLockedForCurrentResult =
+    currentAttemptId !== null && lastRegisteredAttemptIdRef.current === currentAttemptId;
 
   useEffect(() => {
     fetchRankings();
@@ -119,6 +124,7 @@ export const ReactionTest = ({
   useEffect(() => {
     setRankingSubmitState('idle');
     setRankingErrorMsg(null);
+    setCurrentAttemptId(null);
   }, [result.reactionTimeMs]);
 
   useEffect(() => {
@@ -143,7 +149,10 @@ export const ReactionTest = ({
 
       const errors: string[] = [];
       if (!insertResult.ok) {
+        setCurrentAttemptId(null);
         errors.push(insertResult.error);
+      } else {
+        setCurrentAttemptId(insertResult.attemptId);
       }
       if (!statsResult.ok) {
         errors.push(statsResult.error);
@@ -158,12 +167,17 @@ export const ReactionTest = ({
   }, [fetchServerRecords, result.attempts, result.reactionTimeMs, state]);
 
   const handleRegisterRanking = async () => {
-    const name = displayName.trim() || '익명';
-    if (result.reactionTimeMs <= 0) return;
+    const name = displayName.trim();
+    if (result.reactionTimeMs <= 0 || isRankingLockedForCurrentResult || !currentAttemptId) return;
+    if (!name) {
+      setShowEmptyNameAlert(true);
+      return;
+    }
     setRankingSubmitState('loading');
     setRankingErrorMsg(null);
-    const { success, error } = await addRanking(name, result.reactionTimeMs);
+    const { success, error } = await addRanking(name, result.reactionTimeMs, currentAttemptId);
     if (success) {
+      lastRegisteredAttemptIdRef.current = currentAttemptId;
       setDisplayName('');
       setRankingSubmitState('success');
     } else {
@@ -175,12 +189,36 @@ export const ReactionTest = ({
     }
   };
 
+  const handleStartNextAttempt = () => {
+    setRankingSubmitState('idle');
+    setRankingErrorMsg(null);
+    setDisplayName('');
+    setCurrentAttemptId(null);
+    onStart();
+  };
+
+  const handleResetAll = () => {
+    setRankingSubmitState('idle');
+    setRankingErrorMsg(null);
+    setDisplayName('');
+    setCurrentAttemptId(null);
+    lastSavedResultKeyRef.current = null;
+    lastRegisteredAttemptIdRef.current = null;
+    onReset();
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <AlertModal
         isOpen={showDuplicateAlert}
         message="이미 사용 중인 이름입니다"
         onClose={() => setShowDuplicateAlert(false)}
+        variant="warning"
+      />
+      <AlertModal
+        isOpen={showEmptyNameAlert}
+        message="이름을 입력해주세요"
+        onClose={() => setShowEmptyNameAlert(false)}
         variant="warning"
       />
       <div className="flex items-center justify-between">
@@ -195,7 +233,7 @@ export const ReactionTest = ({
         </div>
         <motion.button
           type="button"
-          onClick={onReset}
+            onClick={handleResetAll}
           className={ui.iconButton}
           aria-label="초기화"
           title="초기화"
@@ -316,7 +354,7 @@ export const ReactionTest = ({
         >
           <motion.button
             type="button"
-            onClick={onStart}
+            onClick={handleStartNextAttempt}
             className={ui.primaryButton}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -342,29 +380,33 @@ export const ReactionTest = ({
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="이름을 입력하세요"
                 maxLength={20}
+                disabled={rankingSubmitState === 'loading' || isRankingLockedForCurrentResult || currentAttemptId === null}
                 className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
               <motion.button
                 type="button"
                 onClick={handleRegisterRanking}
-                disabled={rankingSubmitState === 'loading'}
+                disabled={rankingSubmitState === 'loading' || isRankingLockedForCurrentResult || currentAttemptId === null}
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                 whileHover={rankingSubmitState !== 'loading' ? { scale: 1.02 } : undefined}
                 whileTap={rankingSubmitState !== 'loading' ? { scale: 0.98 } : undefined}
               >
                 <Send className="h-4 w-4" />
-                {rankingSubmitState === 'loading' ? '등록 중...' : '순위 등록'}
+                {rankingSubmitState === 'loading'
+                  ? '등록 중...'
+                  : isRankingLockedForCurrentResult
+                    ? '등록 완료'
+                    : '순위 등록'}
               </motion.button>
             </div>
             {rankingSubmitState === 'success' && (
-                <p className="text-sm text-emerald-600">
-                순위에 등록되었습니다!
-                <br />
-                Top5의 경우 전체 순위에 반영됩니다. 확인해보세요!
-                </p>
+                <p className="text-sm text-emerald-600">순위에 등록되었습니다!</p>
             )}
             {rankingSubmitState === 'error' && rankingErrorMsg && (
               <p className="text-sm text-red-600">{rankingErrorMsg}</p>
+            )}
+            {currentAttemptId === null && !saveErrorMsg && (
+              <p className="text-xs text-slate-500">기록 저장이 완료되면 순위 등록이 활성화됩니다.</p>
             )}
             {saveErrorMsg && (
               <p className="text-xs text-red-600">자동 저장 실패: {saveErrorMsg}</p>
@@ -373,7 +415,7 @@ export const ReactionTest = ({
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
             <motion.button
               type="button"
-              onClick={onStart}
+              onClick={handleStartNextAttempt}
               className={`${ui.primaryButton} w-full sm:w-auto`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -383,7 +425,7 @@ export const ReactionTest = ({
             </motion.button>
             <motion.button
               type="button"
-              onClick={onReset}
+              onClick={handleResetAll}
               className={`${ui.secondaryButton} w-full sm:w-auto`}
               whileTap={{ scale: 0.98 }}
             >
@@ -499,7 +541,7 @@ export const ReactionTest = ({
                     <span className="font-medium text-slate-600">#{entry.rank}</span>
                     <span className="text-slate-700">
                       {entry.rank === 1 ? '🥇 ' : entry.rank === 2 ? '🥈 ' : entry.rank === 3 ? '🥉 ' : ''}
-                      {entry.displayName}
+                      {entry.displayName.length > 10 ? `${entry.displayName.slice(0, 10)}...` : entry.displayName}
                     </span>
                     <span className="tabular-nums text-blue-600">{entry.reactionTimeMs} ms</span>
                   </li>
