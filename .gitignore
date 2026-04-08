@@ -39,3 +39,8 @@ dist-ssr/
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Agent 관련 파일
+.github/
+AGENTS.md
+design-md-archive/

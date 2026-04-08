@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import type { RankingEntry } from '../types/ranking';
 import { getReactionRank } from '../utils/reactionRank';
+import { validateRankingName } from '../utils/rankingName';
 
 export interface UseGlobalRankingReturn {
   list: RankingEntry[];
@@ -57,6 +58,11 @@ export function useGlobalRanking(): UseGlobalRankingReturn {
   const addRanking = useCallback(
     async (displayName: string, reactionTimeMs: number, attemptId: string): Promise<{ success: boolean; error?: string }> => {
       try {
+        const validationResult = validateRankingName(displayName);
+        if (!validationResult.ok) {
+          return { success: false, error: validationResult.error };
+        }
+
         const {
           data: { session },
           error: sessionError,
@@ -76,7 +82,7 @@ export function useGlobalRanking(): UseGlobalRankingReturn {
         }
 
         const { error: insertError } = await supabase.from('rankings').insert({
-          player_name: displayName,
+          player_name: validationResult.value,
           reaction_time: reactionTimeMs,
           attempt_id: attemptId,
         });

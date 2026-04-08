@@ -13,6 +13,24 @@ type SupabaseErrorLike = {
   code?: string;
 };
 
+function toSafeSupabaseMessage(error: unknown, fallbackMessage: string): string {
+  if (!error || typeof error !== 'object') {
+    return fallbackMessage;
+  }
+
+  const err = error as SupabaseErrorLike;
+
+  if (err.code === 'PGRST116') {
+    return '요청한 데이터를 찾을 수 없습니다.';
+  }
+
+  if (err.code === '42501') {
+    return '권한 확인에 실패했습니다. 다시 시도해 주세요.';
+  }
+
+  return fallbackMessage;
+}
+
 function isRlsOrPrivilegeError(error: unknown): boolean {
   if (!error || typeof error !== 'object') {
     return false;
@@ -49,19 +67,12 @@ function toReadableError(error: unknown, fallbackMessage: string): string {
     return error;
   }
 
-  if (error instanceof Error) {
-    return error.message || fallbackMessage;
+  if (error instanceof Error && error.name === 'AbortError') {
+    return '요청 시간이 초과되었습니다. 다시 시도해 주세요.';
   }
 
   if (typeof error === 'object') {
-    const err = error as SupabaseErrorLike;
-    const parts = [err.message, err.details, err.hint].filter(
-      (part): part is string => typeof part === 'string' && part.trim().length > 0,
-    );
-
-    if (parts.length > 0) {
-      return parts.join(' / ');
-    }
+    return toSafeSupabaseMessage(error, fallbackMessage);
   }
 
   return fallbackMessage;

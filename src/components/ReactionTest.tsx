@@ -4,6 +4,7 @@ import { Zap, RotateCcw, AlertTriangle, Trophy, ChevronRight, Send } from 'lucid
 import { REACTION_STATE, type ReactionState } from '../types/reactionState';
 import type { ReactionResult } from '../types/reactionState';
 import { getReactionRank, getRankMessage } from '../utils/reactionRank';
+import { validateRankingName } from '../utils/rankingName';
 import { useGlobalRanking } from '../hooks/useGlobalRanking';
 import { fetchRecentReactionRecords, insertReactionRecord, type ReactionRecord } from '../lib/reactionRecords';
 import { fetchMyStats, upsertMyStatsAfterAttempt } from '../lib/userStats';
@@ -12,16 +13,16 @@ import { AlertModal } from './AlertModal';
 function getBackgroundClass(state: ReactionState): string {
   switch (state) {
     case REACTION_STATE.WAITING:
-      return 'bg-blue-100';
+      return 'bg-[var(--app-waiting-bg)]';
     case REACTION_STATE.READY:
-      return 'bg-rose-100';
+      return 'bg-[var(--app-ready-bg)]';
     case REACTION_STATE.CLICK_NOW:
-      return 'bg-emerald-100';
+      return 'bg-[var(--app-click-bg)]';
     case REACTION_STATE.RESULT:
     case REACTION_STATE.EARLY_CLICK:
-      return 'bg-slate-100';
+      return 'bg-[var(--app-neutral-soft)]';
     default:
-      return 'bg-slate-100';
+      return 'bg-[var(--app-neutral-soft)]';
   }
 }
 
@@ -38,21 +39,21 @@ export interface ReactionTestProps {
 }
 
 const ui = {
-  card: 'rounded-2xl border border-slate-200 bg-white p-4',
-  panel: 'mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3',
-  sectionTitle: 'text-sm font-semibold text-slate-700',
-  mutedText: 'text-slate-500',
+  card: 'rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4',
+  panel: 'mt-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-neutral-soft)] p-3',
+  sectionTitle: 'text-sm font-semibold text-[var(--app-text)]',
+  mutedText: 'text-[var(--app-muted)]',
   iconButton:
-    'inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50',
+    'inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] transition-opacity hover:opacity-85',
   primaryButton:
-    'inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-700',
+    'inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--app-primary)] px-6 py-3 text-base font-semibold text-white transition-opacity hover:opacity-90',
   secondaryButton:
-    'inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50',
-  softListItem: 'rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium tabular-nums text-slate-700',
-  rankingListItem: 'flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm',
-  serverListItem: 'flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm',
-  stateTitle: 'text-slate-900',
-  stateBody: 'text-slate-600',
+    'inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-2.5 text-sm font-medium text-[var(--app-text)] transition-opacity hover:opacity-90',
+  softListItem: 'rounded-lg bg-[var(--app-neutral-soft)] px-3 py-1.5 text-sm font-medium tabular-nums text-[var(--app-text)]',
+  rankingListItem: 'flex items-center justify-between rounded-lg border border-[var(--app-border)] bg-[var(--app-neutral-soft)] px-3 py-2 text-sm',
+  serverListItem: 'flex items-center justify-between rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-sm',
+  stateTitle: 'text-[var(--app-text)]',
+  stateBody: 'text-[var(--app-muted)]',
 };
 
 export const ReactionTest = ({
@@ -167,15 +168,26 @@ export const ReactionTest = ({
   }, [fetchServerRecords, result.attempts, result.reactionTimeMs, state]);
 
   const handleRegisterRanking = async () => {
-    const name = displayName.trim();
     if (result.reactionTimeMs <= 0 || isRankingLockedForCurrentResult || !currentAttemptId) return;
-    if (!name) {
+    const validationResult = validateRankingName(displayName);
+    if (!validationResult.ok) {
+      setRankingSubmitState('error');
+      setRankingErrorMsg(validationResult.error);
+
+      if (validationResult.error === '이름을 입력해주세요.') {
+        setShowEmptyNameAlert(true);
+      }
+
+      return;
+    }
+
+    if (!validationResult.value) {
       setShowEmptyNameAlert(true);
       return;
     }
     setRankingSubmitState('loading');
     setRankingErrorMsg(null);
-    const { success, error } = await addRanking(name, result.reactionTimeMs, currentAttemptId);
+    const { success, error } = await addRanking(validationResult.value, result.reactionTimeMs, currentAttemptId);
     if (success) {
       lastRegisteredAttemptIdRef.current = currentAttemptId;
       setDisplayName('');
@@ -223,12 +235,12 @@ export const ReactionTest = ({
       />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-            <Zap className="h-5 w-5 text-blue-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--app-primary-soft)]">
+            <Zap className="h-5 w-5 text-[var(--app-primary)]" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-slate-900">반응속도 테스트</h1>
-            <p className="text-xs text-slate-500">2~7초 후 초록색에 클릭</p>
+            <h1 className="text-lg font-semibold text-[var(--app-text)]">반응속도 테스트</h1>
+            <p className="text-xs text-[var(--app-muted)]">2~7초 후 초록색에 클릭</p>
           </div>
         </div>
         <motion.button
@@ -281,7 +293,7 @@ export const ReactionTest = ({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <p className="text-2xl font-bold text-rose-600 sm:text-3xl">기다리세요...</p>
+                <p className="text-2xl font-bold text-[var(--app-text)] sm:text-3xl">기다리세요...</p>
                 <p className={`text-sm ${ui.stateBody}`}>초록색으로 바뀌면 바로 클릭!</p>
               </motion.div>
             )}
@@ -295,7 +307,7 @@ export const ReactionTest = ({
                 exit={{ opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               >
-                <p className="text-3xl font-bold text-emerald-600 sm:text-4xl">클릭하세요!</p>
+                <p className="text-3xl font-bold text-[var(--app-text)] sm:text-4xl">클릭하세요!</p>
                 <p className={`text-base ${ui.stateBody}`}>지금!</p>
               </motion.div>
             )}
@@ -328,13 +340,13 @@ export const ReactionTest = ({
                 transition={{ duration: 0.25 }}
               >
                 <p className={`text-lg font-medium ${ui.stateBody}`}>반응 시간</p>
-                <p className="text-5xl font-bold tabular-nums text-slate-900 sm:text-6xl">
+                <p className="text-5xl font-bold tabular-nums text-[var(--app-text)] sm:text-6xl">
                   {result.reactionTimeMs}
-                  <span className="ml-1 text-3xl text-slate-500 sm:text-4xl">ms</span>
+                  <span className="ml-1 text-3xl text-[var(--app-muted)] sm:text-4xl">ms</span>
                 </p>
                 {currentRank && (
                   <div className="flex flex-col items-center gap-1">
-                    <span className="rounded-full bg-amber-100 px-3 py-0.5 text-sm font-bold text-amber-700">
+                    <span className="rounded-full bg-[var(--app-primary-soft-strong)] px-3 py-0.5 text-sm font-bold text-[var(--app-text)]">
                       랭크 {currentRank.rank}
                     </span>
                     <p className="text-xl font-semibold text-emerald-600">{rankMessage}</p>
@@ -372,22 +384,22 @@ export const ReactionTest = ({
           className="flex flex-col gap-4"
         >
           <div className={`flex flex-col gap-2 ${ui.card}`}>
-            <p className="text-sm font-medium text-slate-700">순위에 등록하기</p>
+            <p className="text-sm font-medium text-[var(--app-text)]">순위에 등록하기</p>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="이름을 입력하세요"
-                maxLength={20}
+                maxLength={12}
                 disabled={rankingSubmitState === 'loading' || isRankingLockedForCurrentResult || currentAttemptId === null}
-                className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="flex-1 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2 text-sm text-[var(--app-text)] placeholder-[var(--app-muted)] focus:border-[var(--app-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--app-primary)]"
               />
               <motion.button
                 type="button"
                 onClick={handleRegisterRanking}
                 disabled={rankingSubmitState === 'loading' || isRankingLockedForCurrentResult || currentAttemptId === null}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--app-primary)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 whileHover={rankingSubmitState !== 'loading' ? { scale: 1.02 } : undefined}
                 whileTap={rankingSubmitState !== 'loading' ? { scale: 0.98 } : undefined}
               >
@@ -405,8 +417,9 @@ export const ReactionTest = ({
             {rankingSubmitState === 'error' && rankingErrorMsg && (
               <p className="text-sm text-red-600">{rankingErrorMsg}</p>
             )}
+            <p className="text-xs text-[var(--app-muted)]">2~12자, 한글/영문/숫자/공백 1칸/_/- 만 사용할 수 있습니다.</p>
             {currentAttemptId === null && !saveErrorMsg && (
-              <p className="text-xs text-slate-500">기록 저장이 완료되면 순위 등록이 활성화됩니다.</p>
+              <p className="text-xs text-[var(--app-muted)]">기록 저장이 완료되면 순위 등록이 활성화됩니다.</p>
             )}
             {saveErrorMsg && (
               <p className="text-xs text-red-600">자동 저장 실패: {saveErrorMsg}</p>
@@ -446,7 +459,7 @@ export const ReactionTest = ({
         </h2>
         <div className="mb-3 flex items-baseline justify-between gap-2">
           <span className={ui.mutedText}>현재</span>
-          <span className="text-2xl font-bold tabular-nums text-slate-900">
+          <span className="text-2xl font-bold tabular-nums text-[var(--app-text)]">
             {isShowingResult ? `${result.reactionTimeMs} ms` : '—'}
           </span>
         </div>
@@ -470,25 +483,25 @@ export const ReactionTest = ({
             </ul>
             {result.averageMs !== null && (
               <p className={`mt-3 text-sm ${ui.mutedText}`}>
-                평균 <span className="font-semibold text-slate-800">{result.averageMs} ms</span>
+                평균 <span className="font-semibold text-[var(--app-text)]">{result.averageMs} ms</span>
               </p>
             )}
           </>
         )}
         {result.recentRecords.length === 0 && !isShowingResult && (
-          <p className="text-sm text-slate-500">측정 기록이 존재하지 않습니다. 게임을 시작해볼까요?</p>
+          <p className="text-sm text-[var(--app-muted)]">측정 기록이 존재하지 않습니다. 게임을 시작해볼까요?</p>
         )}
 
         <div className={ui.panel}>
-          <h3 className="text-xs font-semibold text-slate-600">서버 기록</h3>
+          <h3 className="text-xs font-semibold text-[var(--app-muted)]">서버 기록</h3>
 
           {serverRecordsLoading ? (
-            <p className="mt-2 text-sm text-slate-500">서버 기록 불러오는 중...</p>
+            <p className="mt-2 text-sm text-[var(--app-muted)]">서버 기록 불러오는 중...</p>
           ) : (
             <>
               <div className="mt-2 flex items-baseline justify-between gap-2">
                 <span className={ui.mutedText}>최고 기록</span>
-                <span className="text-lg font-semibold tabular-nums text-slate-900">
+                <span className="text-lg font-semibold tabular-nums text-[var(--app-text)]">
                   {serverBestTimeMs !== null ? `${serverBestTimeMs} ms` : '—'}
                 </span>
               </div>
@@ -501,12 +514,12 @@ export const ReactionTest = ({
                       className={ui.serverListItem}
                     >
                       <span className={ui.mutedText}>{new Date(record.createdAt).toLocaleDateString('ko-KR').replace(/\s/g, '').replace(/\.$/, '')}</span>
-                      <span className="font-medium tabular-nums text-slate-800">{record.reactionTimeMs} ms</span>
+                      <span className="font-medium tabular-nums text-[var(--app-text)]">{record.reactionTimeMs} ms</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="mt-3 text-sm text-slate-500">서버에 저장된 최근 기록이 없습니다.</p>
+                <p className="mt-3 text-sm text-[var(--app-muted)]">서버에 저장된 최근 기록이 없습니다.</p>
               )}
             </>
           )}
@@ -522,15 +535,15 @@ export const ReactionTest = ({
         initial={false}
       >
         <div className="mb-2 flex items-center gap-2">
-          <Trophy className="h-5 w-5 text-slate-600" />
-          <h2 className="text-sm font-semibold text-slate-700">
+          <Trophy className="h-5 w-5 text-[var(--app-muted)]" />
+          <h2 className="text-sm font-semibold text-[var(--app-text)]">
             전체 순위
           </h2>
         </div>
         {isRankingAvailable ? (
           <div className="space-y-2">
             {rankingLoading ? (
-              <p className="text-sm text-slate-500">순위 불러오는 중...</p>
+              <p className="text-sm text-[var(--app-muted)]">순위 불러오는 중...</p>
             ) : rankingList.length > 0 ? (
               <ul className="space-y-1.5">
                 {rankingList.slice(0, 5).map((entry) => (
@@ -538,21 +551,21 @@ export const ReactionTest = ({
                     key={entry.rank}
                     className={ui.rankingListItem}
                   >
-                    <span className="font-medium text-slate-600">#{entry.rank}</span>
-                    <span className="text-slate-700">
+                    <span className="font-medium text-[var(--app-muted)]">#{entry.rank}</span>
+                    <span className="text-[var(--app-text)]">
                       {entry.rank === 1 ? '🥇 ' : entry.rank === 2 ? '🥈 ' : entry.rank === 3 ? '🥉 ' : ''}
                       {entry.displayName.length > 10 ? `${entry.displayName.slice(0, 10)}...` : entry.displayName}
                     </span>
-                    <span className="tabular-nums text-blue-600">{entry.reactionTimeMs} ms</span>
+                    <span className="tabular-nums text-[var(--app-primary)]">{entry.reactionTimeMs} ms</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-slate-500">아직 기록이 없어요.</p>
+              <p className="text-sm text-[var(--app-muted)]">아직 기록이 없어요.</p>
             )}
           </div>
         ) : (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-[var(--app-muted)]">
             배포 후 다른 유저와 순위를 비교할 수 있어요. API 연동 시 이 영역에 전체 순위가 표시됩니다.
           </p>
         )}

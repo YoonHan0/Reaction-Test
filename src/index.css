@@ -9,9 +9,42 @@
   font-style: normal;
 }
 
+:root {
+  --app-bg: #f8fafc;
+  --app-surface: #ffffff;
+  --app-border: #e2e8f0;
+  --app-text: #0f172a;
+  --app-muted: #475569;
+  --app-primary: #2563eb;
+  --app-primary-soft: rgba(37, 99, 235, 0.16);
+  --app-primary-soft-strong: rgba(37, 99, 235, 0.22);
+  --app-waiting-bg: rgba(37, 99, 235, 0.18);
+  --app-ready-bg: rgba(251, 113, 133, 0.18);
+  --app-click-bg: rgba(16, 185, 129, 0.18);
+  --app-neutral-soft: rgba(148, 163, 184, 0.16);
+}
+
+:root.dark {
+  --app-bg: #020617;
+  --app-surface: #0f172a;
+  --app-border: #334155;
+  --app-text: #e2e8f0;
+  --app-muted: #94a3b8;
+  --app-primary: #3b82f6;
+  --app-primary-soft: rgba(59, 130, 246, 0.24);
+  --app-primary-soft-strong: rgba(59, 130, 246, 0.38);
+  --app-waiting-bg: rgba(59, 130, 246, 0.32);
+  --app-ready-bg: rgba(251, 113, 133, 0.28);
+  --app-click-bg: rgba(16, 185, 129, 0.28);
+  --app-neutral-soft: rgba(148, 163, 184, 0.2);
+}
+
 body {
-  @apply antialiased bg-slate-50 text-slate-900;
+  @apply antialiased;
+  background-color: var(--app-bg);
+  color: var(--app-text);
   font-family: 'BMJUA', 'Apple SD Gothic Neo', 'Pretendard', 'Noto Sans KR', sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #root {

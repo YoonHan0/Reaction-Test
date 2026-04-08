@@ -48,7 +48,7 @@ export const AlertModal = ({
               role="alertdialog"
               aria-modal="true"
               aria-labelledby="alert-title"
-              className="relative w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-lg"
+              className="relative w-full max-w-sm rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-lg"
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -58,7 +58,7 @@ export const AlertModal = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="absolute right-3 top-3 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                className="absolute right-3 top-3 rounded-lg p-1 text-slate-400 dark:text-slate-500 transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300"
                 aria-label="닫기"
               >
                 <X className="h-5 w-5" />
@@ -69,10 +69,10 @@ export const AlertModal = ({
                   <AlertTriangle className="h-6 w-6" />
                 </div>
                 <div>
-                  <h2 id="alert-title" className="text-lg font-semibold text-slate-900">
+                  <h2 id="alert-title" className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                     알림
                   </h2>
-                  <p className="mt-2 text-sm text-slate-500">{message}</p>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{message}</p>
                 </div>
                 <button
                   type="button"
